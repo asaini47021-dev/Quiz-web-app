@@ -1,13 +1,12 @@
-
 from flask import Flask, render_template_string
 from pymongo import MongoClient
 import os
 
 app = Flask(__name__)
 
-# आपका MongoDB कनेक्शन
+# आपका MongoDB कनेक्शन (टाइमआउट सेटिंग्स के साथ ताकि हैंग न हो)
 MONGO_URI = 'mongodb+srv://ssaini47021_db_user:jhJd1y4EeIPRk81K@cluster0.vuh9kkg.mongodb.net/?retryWrites=true&w=majority'
-client = MongoClient(MONGO_URI)
+client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
 db = client['QuizBotPro']
 scores_db = db['scores']
 
@@ -75,7 +74,6 @@ HTML_TEMPLATE = """
         </div>
     </div>
     <script>
-        // Telegram Web App को इनिशियलाइज़ करना
         window.Telegram.WebApp.ready();
         window.Telegram.WebApp.expand();
     </script>
@@ -85,11 +83,14 @@ HTML_TEMPLATE = """
 
 @app.route('/')
 def index():
-    # डेटाबेस से टॉप 50 स्कोर निकालना
-    users_cursor = scores_db.find().sort('score', -1).limit(50)
-    users = list(users_cursor)
+    try:
+        # डेटाबेस सेफली फेच करना
+        users_cursor = scores_db.find().sort('score', -1).limit(50)
+        users = list(users_cursor)
+    except Exception as e:
+        users = []
     return render_template_string(HTML_TEMPLATE, users=users)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
-  
+    
